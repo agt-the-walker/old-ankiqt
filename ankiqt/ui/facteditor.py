@@ -142,7 +142,7 @@ class FactEditor(object):
         self.fieldsBox.addWidget(self.fieldsScroll)
         # tags
         self.tagsBox = QHBoxLayout()
-        self.tagsLabel = QLabel(_("Tags"))
+        self.tagsLabel = QLabel(_("T"))
         self.tagsBox.addWidget(self.tagsLabel)
         self.tags = ui.tagedit.TagEdit(self.parent)
         self.tags.connect(self.tags, SIGNAL("lostFocus"),
@@ -350,7 +350,7 @@ class FactEditor(object):
 
     def drawField(self, field, n):
         # label
-        l = QLabel(field.name)
+        l = QLabel(field.name[0])
         self.labels.append(l)
         self.fieldsGrid.addWidget(l, n, 0)
         # edit widget
