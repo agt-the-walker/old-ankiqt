@@ -43,7 +43,6 @@ class AddCards(QDialog):
         self.forceClose = False
         restoreGeom(self, "add")
         restoreSplitter(self.dialog.splitter, "add")
-        self.dialog.splitter.setChildrenCollapsible(False)
         self.show()
         addHook('guiReset', self.modelChanged)
         ui.dialogs.open("AddCards", self)

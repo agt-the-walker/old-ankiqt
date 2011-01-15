@@ -115,9 +115,6 @@
       <property name="orientation">
        <enum>Qt::Vertical</enum>
       </property>
-      <property name="childrenCollapsible">
-       <bool>false</bool>
-      </property>
       <widget class="QTableView" name="tableView">
        <property name="sizePolicy">
         <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
@@ -174,9 +171,6 @@
          <widget class="QSplitter" name="splitter2">
           <property name="orientation">
            <enum>Qt::Horizontal</enum>
-          </property>
-          <property name="childrenCollapsible">
-           <bool>false</bool>
           </property>
           <widget class="QWidget" name="fieldsArea" native="true">
            <property name="sizePolicy">

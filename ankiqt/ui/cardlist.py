@@ -362,7 +362,6 @@ class EditDeck(QMainWindow):
         restoreGeom(self, "editor")
         restoreState(self, "editor")
         restoreSplitter(self.dialog.splitter, "editor")
-        self.dialog.splitter.setChildrenCollapsible(False)
         # toolbar
         self.dialog.toolBar.setIconSize(QSize(self.config['iconSize'],
                                               self.config['iconSize']))
