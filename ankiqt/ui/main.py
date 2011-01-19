@@ -22,6 +22,7 @@ from anki.stdmodels import BasicModel
 from anki.hooks import runHook, addHook, removeHook, _hooks, wrap
 from anki.deck import newCardOrderLabels, newCardSchedulingLabels
 from anki.deck import revCardOrderLabels, failedCardOptionLabels
+from ankiqt.ui.utils import saveGeom, restoreGeom, saveState, restoreState
 import anki.lang
 import anki.deck
 import ankiqt
@@ -37,6 +38,9 @@ class AnkiQt(QMainWindow):
             self.reviewingStarted = False
             if sys.platform.startswith("darwin"):
                 qt_mac_set_menubar_icons(False)
+            elif sys.platform.startswith("win32"):
+                # make sure they're picked up on bundle
+                from ctypes import windll, wintypes
             ankiqt.mw = self
             self.app = app
             self.config = config
@@ -67,8 +71,8 @@ class AnkiQt(QMainWindow):
             self.setupProgressInfo()
             self.setupBackups()
             if self.config['mainWindowState']:
-                self.restoreGeometry(self.config['mainWindowGeom'])
-                self.restoreState(self.config['mainWindowState'])
+                restoreGeom(self, "mainWindow", 21)
+                restoreState(self, "mainWindow")
             else:
                 self.resize(500, 500)
             # load deck
@@ -366,6 +370,7 @@ Please do not file a bug report with Anki.<br>""")
                         not self.deck.sessionStartTime):
                         return self.moveToState("studyScreen")
                     if self.deck.sessionLimitReached():
+                        self.showToolTip(_("Session limit reached."))
                         self.moveToState("studyScreen")
                         # switch to timeboxing screen
                         self.mainWin.tabWidget.setCurrentIndex(2)
@@ -1782,7 +1787,8 @@ learnt today")
            self.mainWin.newCardScheduling.currentIndex())
         uf(self.deck, 'revCardOrder',
            self.mainWin.revCardOrder.currentIndex())
-        if (self.deck.getFailedCardPolicy() !=
+        pol = self.deck.getFailedCardPolicy()
+        if (pol != 5 and pol !=
             self.mainWin.failedCardsOption.currentIndex()):
             self.deck.setFailedCardPolicy(
                 self.mainWin.failedCardsOption.currentIndex())
@@ -1912,8 +1918,11 @@ learnt today")
         self.deck.setUndoEnd(undo)
 
     def onUndo(self):
+        name = self.deck.undoName()
         self.deck.undo()
         self.reset()
+        if name == "Answer Card":
+            self.showToolTip(_("Card placed back in queue."))
 
     def onRedo(self):
         self.deck.redo()
@@ -2074,8 +2083,9 @@ Please give your deck a name:"""))
             d.s.statement("drop index %s" % i)
         # and q/a cache
         d.s.statement("update cards set question = '', answer = ''")
-        # media db
-        d.s.statement("update media set originalPath = description")
+        # media
+        d.s.statement("update media set description = ''")
+        d.s.statement("update deckVars set value = '' where key = 'mediaURL'")
         self.deck.updateProgress()
         d.s.statement("vacuum")
         self.deck.updateProgress()
@@ -2104,7 +2114,7 @@ it to your friends.
         if mdir:
             for f in os.listdir(mdir):
                 zip.write(os.path.join(mdir, f),
-                          str(os.path.join("shared.media/", f)))
+                          os.path.join("shared.media/", f))
             os.chdir(pwd)
             shutil.rmtree(mdir)
         os.chdir(pwd)
@@ -2444,6 +2454,7 @@ This deck already exists on your computer. Overwrite the local copy?"""),
         "Graphs",
         "Dstats",
         "Cstats",
+        "Cram",
         "StudyOptions",
         )
 
@@ -2683,6 +2694,9 @@ The regenerate reading field plugin has been disabled, as the Japanese \
 support plugin supports this now. Please download the latest version.""")),
             ("Sync LaTeX with iPhone client.py",
              native % "sync LaTeX"),
+            ("Incremental Reading.py",
+             _("""The incremental reading plugin has been disabled because \
+it needs updates.""")),
             ("Learn Mode.py", _("""\
 The learn mode plugin has been disabled because it needs to be rewritten \
 to work with this version of Anki."""))
@@ -2690,7 +2704,10 @@ to work with this version of Anki."""))
         for p in plugins:
             path = os.path.join(dir, p[0])
             if os.path.exists(path):
-                os.rename(path, path.replace(".py", ".disabled"))
+                new = path.replace(".py", ".disabled")
+                if os.path.exists(new):
+                    os.unlink(new)
+                os.rename(path, new)
                 ui.utils.showInfo(p[1])
 
     def rebuildPluginsMenu(self):
@@ -2729,9 +2746,7 @@ to work with this version of Anki."""))
         if path is None:
             path = self.pluginsFolder()
         if sys.platform == "win32":
-            anki.utils.call(["explorer", path.encode(
-                sys.getfilesystemencoding())],
-                            wait=False)
+            anki.utils.call(["explorer", path], wait=False)
         else:
             QDesktopServices.openUrl(QUrl("file://" + path))
 
