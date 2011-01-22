@@ -2621,12 +2621,16 @@ This deck already exists on your computer. Overwrite the local copy?"""),
     def setupAutoUpdate(self):
         self.autoUpdate = ui.update.LatestVersionFinder(self)
         self.connect(self.autoUpdate, SIGNAL("newVerAvail"), self.newVerAvail)
+        self.connect(self.autoUpdate, SIGNAL("newMsg"), self.newMsg)
         self.connect(self.autoUpdate, SIGNAL("clockIsOff"), self.clockIsOff)
         self.autoUpdate.start()
 
-    def newVerAvail(self, version):
-        if self.config['suppressUpdate'] < version['latestVersion']:
-            ui.update.askAndUpdate(self, version)
+    def newVerAvail(self, data):
+        if self.config['suppressUpdate'] < data['latestVersion']:
+            ui.update.askAndUpdate(self, data)
+
+    def newMsg(self, data):
+        ui.update.showMessages(self, data)
 
     def clockIsOff(self, diff):
         if diff < 0:
@@ -2759,6 +2763,8 @@ to work with this version of Anki."""))
         if path is None:
             path = self.pluginsFolder()
         if sys.platform == "win32":
+            if isinstance(path, unicode):
+                path = path.encode(sys.getfilesystemencoding())
             anki.utils.call(["explorer", path], wait=False)
         else:
             QDesktopServices.openUrl(QUrl("file://" + path))
@@ -2963,7 +2969,7 @@ to work with this version of Anki."""))
             # check if they were using plugin
             if not prev:
                 p = self.dropboxFolder()
-                p = p.replace("/Anki", "").replace("\\Anki", "")
+                p = os.path.join(p, "Public")
                 deck.mediaPrefix = p
                 migrateFrom = deck.mediaDir()
             if not migrateFrom:
@@ -3262,6 +3268,14 @@ It can take a long time. Proceed?""")):
         # if they've just upgraded, set created time based on deck age
         if time.time() - self.config['created'] < 60 and self.deck:
             self.config['created'] = self.deck.created
+        # tweaks for small screens
+        if self.config['optimizeSmall']:
+            p = self.mainWin.deckBrowserOuterFrame.sizePolicy()
+            p.setHorizontalStretch(1)
+            self.mainWin.deckBrowserOuterFrame.setSizePolicy(p)
+            self.mainWin.decksLabel.hide()
+            self.mainWin.decksLine.hide()
+            self.mainWin.studyOptsLabel.hide()
 
     def setupBackups(self):
         # set backups
