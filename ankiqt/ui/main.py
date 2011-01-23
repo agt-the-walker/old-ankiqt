@@ -3270,12 +3270,22 @@ It can take a long time. Proceed?""")):
             self.config['created'] = self.deck.created
         # tweaks for small screens
         if self.config['optimizeSmall']:
+            def removeAllSpacers(layout):
+                for i in reversed(range(layout.count())):
+                    item = layout.itemAt(i)
+                    if item.layout():
+                        removeAllSpacers(item.layout())
+                    elif item.spacerItem():
+                        layout.takeAt(i)
+
             p = self.mainWin.deckBrowserOuterFrame.sizePolicy()
             p.setHorizontalStretch(1)
             self.mainWin.deckBrowserOuterFrame.setSizePolicy(p)
             self.mainWin.decksLabel.hide()
             self.mainWin.decksLine.hide()
             self.mainWin.studyOptsLabel.hide()
+            # the following actually removes 'studyOptsSpacer'
+            removeAllSpacers(self.mainWin.studyOptionsFrame.layout())
 
     def setupBackups(self):
         # set backups
