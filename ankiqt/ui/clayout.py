@@ -12,7 +12,8 @@ from anki.facts import *
 from anki.fonts import toCanonicalFont
 from anki.cards import Card
 from anki.sound import playFromText, clearAudioQueue
-from ankiqt.ui.utils import saveGeom, restoreGeom, getBase, mungeQA
+from ankiqt.ui.utils import saveGeom, restoreGeom, getBase, mungeQA, \
+     saveSplitter, restoreSplitter
 from anki.hooks import runFilter
 from ankiqt import ui
 
@@ -71,6 +72,7 @@ class CardLayout(QDialog):
                 return
         self.form = ankiqt.forms.clayout.Ui_Dialog()
         self.form.setupUi(self)
+        restoreSplitter(self.form.splitter, "clayout")
         if type == 0:
             self.form.templateType.setText(
                 _("Templates used by fact:"))
@@ -90,7 +92,9 @@ class CardLayout(QDialog):
         # hack to ensure we're focused on the active template in the model
         # properties
         if type == 2 and factOrModel.currentCard.ordinal != 0:
-            self.form.cardList.setCurrentIndex(factOrModel.currentCard.ordinal)
+            idx = factOrModel.currentCard.ordinal
+            self.form.cardList.setCurrentIndex(idx)
+            self.cardChanged(idx)
         self.exec_()
 
     # Cards & Preview
@@ -318,6 +322,7 @@ order by n""", id=card.id)
             self.mw.reset()
         self.deck.finishProgress()
         saveGeom(self, "CardLayout")
+        saveSplitter(self.form.splitter, "clayout")
         QDialog.reject(self)
 
     def onHelp(self):
